@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Receiver Panel | Secure DB Proxy</title>
+  <link rel="stylesheet" href="receiver.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <h1>📥 Receiver Dashboard</h1>
+
+    <!-- 🔐 Login Section -->
+    <div id="loginBox">
+      <div class="card">
+        <h3><i class="fas fa-lock"></i> Secure Login</h3>
+        <div class="input-group">
+          <label for="username"><i class="fas fa-user"></i> Username</label>
+          <input type="text" id="username" placeholder="Enter your username">
+        </div>
+        <div class="input-group">
+          <label for="password"><i class="fas fa-key"></i> Password</label>
+          <input type="password" id="password" placeholder="Enter your password">
+        </div>
+        <button class="btn btn-primary" onclick="login()">
+          <i class="fas fa-sign-in-alt"></i> Login
+        </button>
+        <div id="loginStatus" class="status-message"></div>
+      </div>
+    </div>
+
+    <!-- 🎯 Main Panel -->
+    <div id="panel" style="display:none;">
+      <!-- Stats Overview -->
+      <div class="stats-container">
+        <div class="stat-card">
+          <div class="stat-number" id="totalRequests">0</div>
+          <div class="stat-label">Total Requests</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="approvedRequests">0</div>
+          <div class="stat-label">Approved</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="pendingRequests">0</div>
+          <div class="stat-label">Pending</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="deliveredFiles">0</div>
+          <div class="stat-label">Files Received</div>
+        </div>
+      </div>
+
+      <!-- 📋 Request Table Section -->
+      <div class="card">
+        <h3><i class="fas fa-table"></i> Request Data Access</h3>
+        
+        <div class="input-group">
+          <label for="requestType"><i class="fas fa-tasks"></i> Request Type</label>
+          <select id="requestType" onchange="toggleRequestType()">
+            <option value="access">Table Access Request</option>
+            <option value="download">Download File Request</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label for="senderId"><i class="fas fa-hospital"></i> Sender ID</label>
+          <input type="text" id="senderId" placeholder="Enter Sender ID (e.g., HOSPITAL_A)">
+        </div>
+        
+        <div class="input-group">
+          <label for="tableName"><i class="fas fa-database"></i> Table Name</label>
+          <input type="text" id="tableName" placeholder="Enter Table Name">
+        </div>
+
+        <!-- Download Options (shown only for download requests) -->
+        <div id="downloadOptions" style="display: none;">
+          <div class="input-group">
+            <label><i class="fas fa-cog"></i> Download Options</label>
+            <div class="options-group">
+              <label>
+                <input type="checkbox" id="includeHeaders" checked> Include Headers
+              </label>
+              <label>
+                <input type="radio" name="format" value="csv" checked> CSV
+              </label>
+              <label>
+                <input type="radio" name="format" value="json"> JSON
+              </label>
+            </div>
+          </div>
+          
+          <div class="input-group">
+            <label for="rowLimit"><i class="fas fa-list-ol"></i> Row Limit</label>
+            <input type="number" id="rowLimit" placeholder="Leave empty for all rows" min="1" max="10000">
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="sendRequest()">
+          <i class="fas fa-paper-plane"></i> Send Request
+        </button>
+        <div id="status" class="status-message"></div>
+      </div>
+
+      <!-- 🔍 Advanced Query Request Section -->
+      <div class="card">
+        <h3><i class="fas fa-code"></i> Advanced Query Request</h3>
+        
+        <!-- Database Explorer -->
+        <div class="input-group">
+          <label><i class="fas fa-database"></i> Explore Sender Database</label>
+          <button class="btn btn-secondary" onclick="loadSenderTables()">
+            <i class="fas fa-sync"></i> Load Available Tables
+          </button>
+          <div id="tablesList" class="tables-container"></div>
+        </div>
+
+        <!-- Query Builder -->
+        <div class="input-group">
+          <label for="customQuery"><i class="fas fa-terminal"></i> Custom SQL Query</label>
+          <textarea id="customQuery" rows="4" placeholder="SELECT * FROM patients WHERE age > 30;
+SELECT name, department FROM employees;
+-- Write your query here..."></textarea>
+          <div class="query-helper">
+            <small>💡 You can query: patients, employees, appointments, medical_records, etc.</small>
+          </div>
+        </div>
+
+        <!-- Query Preview Options -->
+        <div class="input-group">
+          <label>Query Options</label>
+          <div class="options-group">
+            <label>
+              <input type="checkbox" id="limitResults" checked> Limit to 100 rows
+            </label>
+            <label>
+              <input type="checkbox" id="includeQueryHeaders" checked> Include column headers
+            </label>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="sendQueryRequest()">
+          <i class="fas fa-paper-plane"></i> Send Query for Approval
+        </button>
+        
+        <div id="queryRequestStatus" class="status-message"></div>
+      </div>
+
+      <!-- ⏳ Pending Query Requests Section -->
+      <div class="card" id="pendingQueriesSection" style="display: none;">
+        <h3><i class="fas fa-clock"></i> Pending Query Requests</h3>
+        <div id="pendingQueriesList"></div>
+      </div>
+
+      <!-- 📥 Pending Download Requests Section -->
+      <div class="card" id="pendingDownloadsSection" style="display: none;">
+        <h3><i class="fas fa-clock"></i> Pending Download Requests</h3>
+        <div id="pendingDownloadsList"></div>
+      </div>
+
+      <!-- 📥 Received Query Results Section -->
+      <div class="card" id="queryResultsSection" style="display: none;">
+        <h3><i class="fas fa-download"></i> Received Query Results</h3>
+        <div id="receivedQueriesList"></div>
+      </div>
+
+      <!-- 📁 Download History Section -->
+      <div class="card" id="downloadHistorySection" style="display: none;">
+        <h3><i class="fas fa-history"></i> Download History</h3>
+        <div id="downloadHistoryList"></div>
+      </div>
+
+      <!-- 🧠 SQL Query Section -->
+      <div class="query-section">
+        <h3><i class="fas fa-search"></i> SQL Query Interface (Local Database)</h3>
+        <textarea id="queryBox" placeholder="Example: SELECT * FROM patients WHERE age > 30;
+Example: SELECT name, department FROM employees ORDER BY join_date DESC;"></textarea>
+        <div class="button-group">
+          <button class="btn btn-success" onclick="runQuery()">
+            <i class="fas fa-play"></i> Execute Query
+          </button>
+          <button class="btn btn-secondary" onclick="clearQuery()">
+            <i class="fas fa-eraser"></i> Clear
+          </button>
+          <button class="btn btn-secondary" onclick="showExamples()">
+            <i class="fas fa-lightbulb"></i> Examples
+          </button>
+        </div>
+
+        <!-- 📊 Query Results -->
+        <div id="queryOutput" style="display:none;">
+          <h4><i class="fas fa-table"></i> Query Results</h4>
+          <div class="table-container">
+            <table id="queryTable"></table>
+          </div>
+          <div id="resultStats" class="status-message"></div>
+        </div>
+
+        <!-- 💬 Query Message -->
+        <div id="queryMessage" class="status-message"></div>
+      </div>
+
+      <!-- 📜 Request History -->
+      <div class="card request-history">
+        <h3><i class="fas fa-history"></i> Request History</h3>
+        <div id="historyList"></div>
+      </div>
+
+      <!-- 🚪 Logout -->
+      <div class="button-group">
+        <button class="btn btn-danger" onclick="logout()">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+        <button class="btn btn-secondary" onclick="refreshDashboard()">
+          <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔔 Notification Container -->
+  <div id="notificationContainer"></div>
+
+  <script src="receiver.js"></script>
+</body>
+</html>
